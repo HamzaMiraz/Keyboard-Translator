@@ -2,17 +2,17 @@
   "manifest_version": 3,
   "name": "Keyboard Translator",
   "version": "1.0",
-  "description": "Translates English words to Bengali phonetically as you type everywhere.",
-  "permissions": [
-    "activeTab"
-  ],
+  "description": "Translates text as you type and translates selected sentences to English.",
+  "permissions": ["activeTab"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "all_frames": true,
       "js": [
+        "api.js",
         "engine.js",
         "ui.js",
+        "selection.js",
         "main.js"
       ]
     }

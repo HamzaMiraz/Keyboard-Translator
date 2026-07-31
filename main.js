@@ -1,53 +1,10 @@
-// main.js - V4: INSTANT TYPING + SENTENCE SELECTION TRANSLATOR
+// main.js - CORE TYPING AND KEYBOARD EVENTS (BUG FIXED)
 
-let currentSuggestion = "";
-let typedWordLength = 0;
-let lastCursorInfo = null;
-let activeWordRequest = ""; 
-
-// New State for Sentence Translation
-let isSelectionMode = false;
-let selectionTranslation = "";
-
-// -------------------------------------------------------------
-// 1. API CALLS
-// -------------------------------------------------------------
-
-// Fetch dictionary meaning for single typing words (English to Bangla)
-async function fetchDictionaryMeaning(word) {
-    try {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=${encodeURIComponent(word)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data && data[0] && data[0][0] && data[0][0][0]) {
-            const translated = data[0][0][0].trim();
-            if (translated.toLowerCase() !== word.toLowerCase() && !/[a-zA-Z]/.test(translated)) {
-                return translated;
-            }
-        }
-    } catch (error) {}
-    return null;
-}
-
-// Fetch sentence meaning for selected text (Auto-Detect to English)
-async function fetchSentenceTranslation(text) {
-    try {
-        // sl=auto (Auto Detect Language like Bangla/Banglish), tl=en (English)
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data && data[0]) {
-            // Combine all sentence parts
-            let fullTranslation = data[0].map(item => item[0]).join("");
-            return fullTranslation.trim();
-        }
-    } catch (error) {}
-    return null;
-}
-
-// -------------------------------------------------------------
-// 2. CURSOR & REPLACEMENT LOGIC
-// -------------------------------------------------------------
+var currentSuggestions = []; 
+var selectedIndex = 0;       
+var typedWordLength = 0;
+var lastCursorInfo = null;
+var activeWordRequest = ""; 
 
 function getCursorInfo() {
     let el = document.activeElement;
@@ -93,64 +50,16 @@ function replaceLastWord(info, newWord, addSpace) {
         info.element.dispatchEvent(new Event('input', { bubbles: true }));
     }
     suggestionBox.style.display = 'none';
-    currentSuggestion = "";
+    currentSuggestions = [];
+    selectedIndex = 0;
     typedWordLength = 0;
 }
 
-// -------------------------------------------------------------
-// 3. SELECTION LOGIC (NEW FEATURE)
-// -------------------------------------------------------------
-
-function handleTextSelection() {
-    let sel = window.getSelection();
-    let text = sel.toString().trim();
-    
-    // If user selected text longer than 1 character
-    if (text.length > 1) {
-        isSelectionMode = true;
-        
-        // Show loading state
-        renderVSCodeSuggestion("Translating to English...");
-        let rect = sel.getRangeAt(0).getBoundingClientRect();
-        suggestionBox.style.top = (window.scrollY + rect.bottom + 8) + 'px';
-        suggestionBox.style.left = (window.scrollX + rect.left) + 'px';
-        suggestionBox.style.display = 'block';
-
-        // Fetch English Translation
-        fetchSentenceTranslation(text).then(translation => {
-            // Make sure the user hasn't un-selected while loading
-            if (translation && isSelectionMode && sel.toString().trim() === text) {
-                selectionTranslation = translation;
-                renderVSCodeSuggestion(translation);
-            }
-        });
-    } else {
-        // If selection is cleared, hide the box
-        if (isSelectionMode) {
-            isSelectionMode = false;
-            selectionTranslation = "";
-            suggestionBox.style.display = 'none';
-        }
-    }
-}
-
-// Trigger selection logic when mouse is released or Shift+Arrow keys are used
-document.addEventListener('mouseup', handleTextSelection);
-document.addEventListener('keyup', (e) => {
-    if (e.shiftKey && e.code.includes('Arrow')) {
-        handleTextSelection();
-    }
-});
-
-// -------------------------------------------------------------
-// 4. TYPING LOGIC (V3 FEATURE)
-// -------------------------------------------------------------
-
+// TYPING LOGIC
 document.addEventListener('keyup', function(e) {
-    if (e.code === 'Tab' || e.code === 'Space') return;
+    if (e.code === 'Tab' || e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') return;
     
-    // Disable typing logic if text is currently highlighted
-    if (isSelectionMode) return; 
+    if (typeof isSelectionMode !== 'undefined' && isSelectionMode) return; 
 
     let info = getCursorInfo();
     if (!info) {
@@ -163,9 +72,9 @@ document.addEventListener('keyup', function(e) {
     
     if (lastWord.trim() !== "" && /^[a-zA-Z]+$/.test(lastWord)) {
         
-        // INSTANT OFFLINE RENDER
-        let instantLocalSuggestion = convertToBangla(lastWord);
-        currentSuggestion = instantLocalSuggestion;
+        let localSuggestion = convertToBangla(lastWord);
+        currentSuggestions = [localSuggestion];
+        selectedIndex = 0;
         typedWordLength = lastWord.length;
         lastCursorInfo = info;
         
@@ -173,42 +82,35 @@ document.addEventListener('keyup', function(e) {
         suggestionBox.style.top = (window.scrollY + rect.bottom + 4) + 'px';
         suggestionBox.style.left = (window.scrollX + rect.left + 4) + 'px';
         
-        renderVSCodeSuggestion(currentSuggestion);
+        renderVSCodeSuggestion(currentSuggestions, selectedIndex);
         suggestionBox.style.display = 'block';
 
-        // BACKGROUND API UPGRADE
         activeWordRequest = lastWord; 
-        fetchDictionaryMeaning(lastWord).then(dictionaryWord => {
-            if (dictionaryWord && activeWordRequest === lastWord) {
-                currentSuggestion = dictionaryWord;
-                renderVSCodeSuggestion(currentSuggestion);
+        fetchTransliteration(lastWord).then(apiSuggestion => {
+            if (apiSuggestion && activeWordRequest === lastWord) {
+                currentSuggestions = Array.from(new Set([apiSuggestion, localSuggestion]));
+                if(selectedIndex >= currentSuggestions.length) selectedIndex = 0;
+                renderVSCodeSuggestion(currentSuggestions, selectedIndex);
             }
         });
+
     } else {
         if (suggestionBox) suggestionBox.style.display = 'none';
-        currentSuggestion = "";
+        currentSuggestions = [];
         activeWordRequest = "";
     }
 }, true);
 
-// -------------------------------------------------------------
-// 5. KEYBOARD CONTROLS (TAB / SPACE)
-// -------------------------------------------------------------
-
+// KEYBOARD SHORTCUTS & NAVIGATION (SHIELD ACTIVATED)
 document.addEventListener('keydown', function(e) {
-    // A. Handle Tab for SELECTION REPLACEMENT
-    if (isSelectionMode && suggestionBox.style.display === 'block' && selectionTranslation !== "") {
+    if (typeof isSelectionMode !== 'undefined' && isSelectionMode && suggestionBox.style.display === 'block' && selectionTranslation !== "") {
         if (e.code === 'Tab') {
             e.preventDefault();
             e.stopPropagation();
-            
-            // Replace highlighted text with English translation using native browser command
+            e.stopImmediatePropagation();
             document.execCommand('insertText', false, selectionTranslation);
-            
-            // Reset states
             suggestionBox.style.display = 'none';
             isSelectionMode = false;
-            selectionTranslation = "";
             return;
         }
         if (e.code === 'Escape') {
@@ -218,26 +120,61 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
-    // B. Handle Tab/Space for TYPING REPLACEMENT
-    if (!isSelectionMode && suggestionBox && suggestionBox.style.display === 'block' && currentSuggestion !== "") {
-        if (e.code === 'Tab') {
+    if ((typeof isSelectionMode === 'undefined' || !isSelectionMode) && suggestionBox && suggestionBox.style.display === 'block' && currentSuggestions.length > 0) {
+        
+        if (e.code === 'ArrowDown') {
+            e.preventDefault(); 
+            e.stopPropagation();           // Blocks website from knowing ArrowDown was pressed
+            e.stopImmediatePropagation();  // Extra shield
+            selectedIndex = (selectedIndex + 1) % currentSuggestions.length;
+            renderVSCodeSuggestion(currentSuggestions, selectedIndex);
+        }
+        else if (e.code === 'ArrowUp') {
             e.preventDefault(); 
             e.stopPropagation();
-            replaceLastWord(lastCursorInfo, currentSuggestion, true); 
+            e.stopImmediatePropagation();
+            selectedIndex = (selectedIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+            renderVSCodeSuggestion(currentSuggestions, selectedIndex);
+        }
+        else if (e.code === 'Tab') {
+            e.preventDefault(); 
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            replaceLastWord(lastCursorInfo, currentSuggestions[selectedIndex], true); 
         }
         else if (e.code === 'Space') {
             suggestionBox.style.display = 'none';
-            currentSuggestion = "";
+            currentSuggestions = [];
             typedWordLength = 0;
             activeWordRequest = "";
         }
         else if (e.code === 'Escape') {
             suggestionBox.style.display = 'none';
-            currentSuggestion = "";
+            currentSuggestions = [];
             typedWordLength = 0;
             activeWordRequest = "";
         }
     }
 }, true);
+
+// HANDLE MOUSE CLICK & HOVER (From ui.js)
+document.addEventListener('suggestionClicked', function(e) {
+    let idx = e.detail.index;
+    if (typeof isSelectionMode !== 'undefined' && isSelectionMode) {
+        document.execCommand('insertText', false, selectionTranslation);
+        suggestionBox.style.display = 'none';
+        isSelectionMode = false;
+    } else {
+        replaceLastWord(lastCursorInfo, currentSuggestions[idx], true);
+    }
+});
+
+document.addEventListener('suggestionHovered', function(e) {
+    let idx = e.detail.index;
+    if (selectedIndex !== idx) {
+        selectedIndex = idx;
+        renderVSCodeSuggestion(currentSuggestions, selectedIndex);
+    }
+});
 
 createSuggestionBox();
