@@ -1,4 +1,4 @@
-// main.js - CORE TYPING AND KEYBOARD EVENTS (BUG FIXED)
+// main.js - CORE TYPING AND KEYBOARD EVENTS (PERFECT SPACING FIX)
 
 var currentSuggestions = []; 
 var selectedIndex = 0;       
@@ -23,8 +23,8 @@ function getCursorInfo() {
 }
 
 function replaceLastWord(info, newWord, addSpace) {
-    let replacement = newWord + (addSpace ? " " : "");
     if (info.type === 'standard') {
+        let replacement = newWord + (addSpace ? " " : "");
         let el = info.element;
         let text = el.value;
         let cursorPos = el.selectionStart;
@@ -37,9 +37,20 @@ function replaceLastWord(info, newWord, addSpace) {
     else if (info.type === 'modern') {
         let node = info.node;
         let offset = info.offset;
+        
         let textBefore = node.nodeValue.substring(0, offset - typedWordLength);
         let textAfter = node.nodeValue.substring(offset);
+        
+        // MAGIC FIX: If there is no text after, we use \u00A0 (Non-Breaking Space) 
+        // to force the browser to visibly move the cursor forward!
+        let spaceChar = "";
+        if (addSpace) {
+            spaceChar = (textAfter.length === 0) ? "\u00A0" : " ";
+        }
+        
+        let replacement = newWord + spaceChar;
         node.nodeValue = textBefore + replacement + textAfter;
+        
         let sel = window.getSelection();
         let range = document.createRange();
         let newOffset = textBefore.length + replacement.length;
@@ -47,9 +58,11 @@ function replaceLastWord(info, newWord, addSpace) {
         range.setEnd(node, newOffset);
         sel.removeAllRanges();
         sel.addRange(range);
+        
         info.element.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    suggestionBox.style.display = 'none';
+    
+    if (suggestionBox) suggestionBox.style.display = 'none';
     currentSuggestions = [];
     selectedIndex = 0;
     typedWordLength = 0;
@@ -58,7 +71,6 @@ function replaceLastWord(info, newWord, addSpace) {
 // TYPING LOGIC
 document.addEventListener('keyup', function(e) {
     if (e.code === 'Tab' || e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') return;
-    
     if (typeof isSelectionMode !== 'undefined' && isSelectionMode) return; 
 
     let info = getCursorInfo();
@@ -78,19 +90,25 @@ document.addEventListener('keyup', function(e) {
         typedWordLength = lastWord.length;
         lastCursorInfo = info;
         
-        let rect = info.element.getBoundingClientRect();
-        suggestionBox.style.top = (window.scrollY + rect.bottom + 4) + 'px';
-        suggestionBox.style.left = (window.scrollX + rect.left + 4) + 'px';
+        let rect;
+        if (info.type === 'modern' && window.getSelection().rangeCount > 0) {
+            rect = window.getSelection().getRangeAt(0).getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) rect = info.element.getBoundingClientRect();
+        } else {
+            rect = info.element.getBoundingClientRect();
+        }
         
         renderVSCodeSuggestion(currentSuggestions, selectedIndex);
-        suggestionBox.style.display = 'block';
+        if (typeof positionSuggestionBox === 'function') positionSuggestionBox(rect); 
 
         activeWordRequest = lastWord; 
         fetchTransliteration(lastWord).then(apiSuggestion => {
             if (apiSuggestion && activeWordRequest === lastWord) {
                 currentSuggestions = Array.from(new Set([apiSuggestion, localSuggestion]));
                 if(selectedIndex >= currentSuggestions.length) selectedIndex = 0;
+                
                 renderVSCodeSuggestion(currentSuggestions, selectedIndex);
+                if (typeof positionSuggestionBox === 'function') positionSuggestionBox(rect); 
             }
         });
 
@@ -101,31 +119,32 @@ document.addEventListener('keyup', function(e) {
     }
 }, true);
 
-// KEYBOARD SHORTCUTS & NAVIGATION (SHIELD ACTIVATED)
+// KEYBOARD SHORTCUTS
 document.addEventListener('keydown', function(e) {
-    if (typeof isSelectionMode !== 'undefined' && isSelectionMode && suggestionBox.style.display === 'block' && selectionTranslation !== "") {
+    // 1. Selection Replacement Mode
+    if (typeof isSelectionMode !== 'undefined' && isSelectionMode && suggestionBox && suggestionBox.style.display === 'block' && selectionTranslation !== "") {
         if (e.code === 'Tab') {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             document.execCommand('insertText', false, selectionTranslation);
-            suggestionBox.style.display = 'none';
+            if (suggestionBox) suggestionBox.style.display = 'none';
             isSelectionMode = false;
             return;
         }
         if (e.code === 'Escape') {
-            suggestionBox.style.display = 'none';
+            if (suggestionBox) suggestionBox.style.display = 'none';
             isSelectionMode = false;
             return;
         }
     }
 
+    // 2. Typing Replacement Mode
     if ((typeof isSelectionMode === 'undefined' || !isSelectionMode) && suggestionBox && suggestionBox.style.display === 'block' && currentSuggestions.length > 0) {
-        
         if (e.code === 'ArrowDown') {
             e.preventDefault(); 
-            e.stopPropagation();           // Blocks website from knowing ArrowDown was pressed
-            e.stopImmediatePropagation();  // Extra shield
+            e.stopPropagation();           
+            e.stopImmediatePropagation();  
             selectedIndex = (selectedIndex + 1) % currentSuggestions.length;
             renderVSCodeSuggestion(currentSuggestions, selectedIndex);
         }
@@ -143,13 +162,13 @@ document.addEventListener('keydown', function(e) {
             replaceLastWord(lastCursorInfo, currentSuggestions[selectedIndex], true); 
         }
         else if (e.code === 'Space') {
-            suggestionBox.style.display = 'none';
+            if (suggestionBox) suggestionBox.style.display = 'none';
             currentSuggestions = [];
             typedWordLength = 0;
             activeWordRequest = "";
         }
         else if (e.code === 'Escape') {
-            suggestionBox.style.display = 'none';
+            if (suggestionBox) suggestionBox.style.display = 'none';
             currentSuggestions = [];
             typedWordLength = 0;
             activeWordRequest = "";
@@ -157,12 +176,12 @@ document.addEventListener('keydown', function(e) {
     }
 }, true);
 
-// HANDLE MOUSE CLICK & HOVER (From ui.js)
+// HANDLE MOUSE CLICK & HOVER
 document.addEventListener('suggestionClicked', function(e) {
     let idx = e.detail.index;
     if (typeof isSelectionMode !== 'undefined' && isSelectionMode) {
         document.execCommand('insertText', false, selectionTranslation);
-        suggestionBox.style.display = 'none';
+        if (suggestionBox) suggestionBox.style.display = 'none';
         isSelectionMode = false;
     } else {
         replaceLastWord(lastCursorInfo, currentSuggestions[idx], true);
@@ -176,5 +195,3 @@ document.addEventListener('suggestionHovered', function(e) {
         renderVSCodeSuggestion(currentSuggestions, selectedIndex);
     }
 });
-
-createSuggestionBox();

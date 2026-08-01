@@ -1,8 +1,9 @@
-// ui.js - VS CODE STYLE UI LOGIC (WITH HOVER SUPPORT)
+// ui.js - VS CODE STYLE UI LOGIC (SMART POSITIONING & AUTO-INIT)
 
 var suggestionBox = null;
 
 function createSuggestionBox() {
+    if (suggestionBox) return; // Prevent creating multiple boxes
     suggestionBox = document.createElement('div');
     suggestionBox.style.position = 'absolute';
     suggestionBox.style.backgroundColor = '#252526'; 
@@ -17,7 +18,6 @@ function createSuggestionBox() {
     suggestionBox.style.maxWidth = '450px';
     document.body.appendChild(suggestionBox);
 
-    // Handle Mouse Clicks safely
     suggestionBox.addEventListener('mousedown', function(e) {
         e.preventDefault(); 
         let item = e.target.closest('.suggestion-item');
@@ -27,7 +27,6 @@ function createSuggestionBox() {
         }
     });
 
-    // Handle Mouse Hover to update selection visually
     suggestionBox.addEventListener('mouseover', function(e) {
         let item = e.target.closest('.suggestion-item');
         if (item) {
@@ -38,7 +37,7 @@ function createSuggestionBox() {
 }
 
 function renderVSCodeSuggestion(suggestionsList, selectedIndex) {
-    if (!suggestionsList || suggestionsList.length === 0) return;
+    if (!suggestionBox || !suggestionsList || suggestionsList.length === 0) return;
     
     let html = '';
     suggestionsList.forEach((sug, i) => {
@@ -64,3 +63,47 @@ function renderVSCodeSuggestion(suggestionsList, selectedIndex) {
     
     suggestionBox.innerHTML = html;
 }
+
+// SMART POSITIONING LOGIC
+function positionSuggestionBox(rect) {
+    if (!suggestionBox || !rect) return;
+    
+    suggestionBox.style.display = 'block';
+
+    let boxWidth = suggestionBox.offsetWidth;
+    let boxHeight = suggestionBox.offsetHeight;
+
+    let viewportWidth = window.innerWidth;
+    let viewportHeight = window.innerHeight;
+
+    let margin = 6;
+    let topPos, leftPos;
+
+    // --- VERTICAL LOGIC ---
+    let spaceBelow = viewportHeight - rect.bottom;
+    let spaceAbove = rect.top;
+
+    // Flip to top if not enough space below
+    if (spaceBelow < (boxHeight + margin) && spaceAbove > (boxHeight + margin)) {
+        topPos = window.scrollY + rect.top - boxHeight - margin;
+    } else {
+        topPos = window.scrollY + rect.bottom + margin;
+    }
+
+    // --- HORIZONTAL LOGIC ---
+    leftPos = window.scrollX + rect.left;
+
+    if (rect.left + boxWidth > viewportWidth) {
+        leftPos = window.scrollX + viewportWidth - boxWidth - margin;
+    }
+    
+    if (leftPos < window.scrollX) {
+        leftPos = window.scrollX + margin;
+    }
+
+    suggestionBox.style.top = topPos + 'px';
+    suggestionBox.style.left = leftPos + 'px';
+}
+
+// Create the box automatically as soon as this file loads!
+createSuggestionBox();
