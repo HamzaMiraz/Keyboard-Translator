@@ -1,6 +1,6 @@
-// api.js - NETWORK REQUESTS & SILENT STATE MANAGER
+// api.js - NETWORK REQUESTS, STATE MANAGER & SMART CACHE ENGINE
 
-// 1. GLOBAL SETTINGS (Always available instantly)
+// 1. GLOBAL SETTINGS
 window.SmartSettings = {
     phoneticEnabled: true,
     phoneticLangCode: 'bn',
@@ -8,7 +8,6 @@ window.SmartSettings = {
     translationLangCode: 'en'
 };
 
-// Keep settings synced silently in the background
 if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.local.get(['phoneticEnabled', 'phoneticLangCode', 'translationEnabled', 'translationLangCode'], function(res) {
         if (res.phoneticEnabled !== undefined) window.SmartSettings.phoneticEnabled = res.phoneticEnabled;
@@ -25,15 +24,44 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
     });
 }
 
-// 2. DYNAMIC PHONETIC API
+// 2. SMART CACHE ENGINE (Zero-RAM Auto-Cleaning)
+window.PhoneticCache = {};
+window.TranslationCache = {};
+const MAX_CACHE_SIZE = 10000; // Maximum words to keep in RAM
+
+// Function to auto-clean old cache when limit is reached
+function manageCacheSize(cacheObj) {
+    let keys = Object.keys(cacheObj);
+    if (keys.length > MAX_CACHE_SIZE) {
+        // Delete the oldest 500 entries to free up RAM instantly
+        for (let i = 0; i < MAX_CACHE_SIZE / 2; i++) {
+            delete cacheObj[keys[i]];
+        }
+    }
+}
+
+// 3. DYNAMIC PHONETIC API (With Caching)
 async function fetchTransliteration(word) {
     let lang = window.SmartSettings.phoneticLangCode;
+    let cacheKey = `${lang}_${word.toLowerCase()}`;
+
+    // CACHE CHECK: If word exists, return instantly (0 API Request!)
+    if (window.PhoneticCache[cacheKey]) {
+        return window.PhoneticCache[cacheKey];
+    }
+
     let url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=${lang}-t-i0-und&num=1`;
     try {
         let res = await fetch(url);
         let data = await res.json();
         if (data[0] === 'SUCCESS' && data[1][0] && data[1][0][1]) {
-            return data[1][0][1][0];
+            let result = data[1][0][1][0];
+            
+            // Save to Cache & Manage RAM
+            window.PhoneticCache[cacheKey] = result;
+            manageCacheSize(window.PhoneticCache);
+            
+            return result;
         }
     } catch (e) {
         console.error("Phonetic Error:", e);
@@ -41,15 +69,19 @@ async function fetchTransliteration(word) {
     return null;
 }
 
-// 3. INLINE TRANSLATION API (Restored Mixed-Language Support)
-// 3. INLINE TRANSLATION API (Decoupled & Independent Pipeline)// phonetic and translation are now independent, so you can turn off phonetic typing but still get perfect translations for Banglish/Hinglish text.
+// 4. INLINE TRANSLATION API (With Caching & Smart Pipeline)
 async function fetchSentenceTranslation(text) {
     let targetLang = window.SmartSettings.translationLangCode;
     let textToTranslate = text;
+    
+    // Create a unique key for the sentence
+    let cacheKey = `${targetLang}_${text.trim().toLowerCase()}`;
 
-    // FIX: Removed the 'phoneticEnabled' condition.
-    // Now it ALWAYS pre-processes the selected text based on your native language code,
-    // so Banglish/Hinglish will always translate perfectly even if typing is turned off!
+    // CACHE CHECK: If sentence was translated before, return instantly
+    if (window.TranslationCache[cacheKey]) {
+        return window.TranslationCache[cacheKey];
+    }
+
     let phoneticLang = window.SmartSettings.phoneticLangCode || 'bn';
     let translitUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=${phoneticLang}-t-i0-und&num=1`;
     
@@ -63,13 +95,18 @@ async function fetchSentenceTranslation(text) {
         console.error("Smart Pipeline Error:", e);
     }
 
-    // Send the processed text to Google Translate
     let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
     try {
         let res = await fetch(url);
         let data = await res.json();
         if (data && data[0] && data[0][0]) {
-            return data[0].map(item => item[0]).join('');
+            let result = data[0].map(item => item[0]).join('');
+            
+            // Save to Cache & Manage RAM
+            window.TranslationCache[cacheKey] = result;
+            manageCacheSize(window.TranslationCache);
+            
+            return result;
         }
     } catch (e) {
         console.error("Translation Error:", e);
