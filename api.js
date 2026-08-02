@@ -1,52 +1,58 @@
-// api.js - HANDLES ALL NETWORK REQUESTS
+// api.js - NETWORK REQUESTS & SILENT STATE MANAGER
 
-// Fetch Transliteration (Strictly returns ONLY ONE best word)
+// 1. GLOBAL SETTINGS (Always available instantly)
+window.SmartSettings = {
+    phoneticEnabled: true,
+    phoneticLangCode: 'bn',
+    translationEnabled: true,
+    translationLangCode: 'en'
+};
+
+// Keep settings synced silently in the background
+if (typeof chrome !== 'undefined' && chrome.storage) {
+    chrome.storage.local.get(['phoneticEnabled', 'phoneticLangCode', 'translationEnabled', 'translationLangCode'], function(res) {
+        if (res.phoneticEnabled !== undefined) window.SmartSettings.phoneticEnabled = res.phoneticEnabled;
+        if (res.phoneticLangCode !== undefined) window.SmartSettings.phoneticLangCode = res.phoneticLangCode;
+        if (res.translationEnabled !== undefined) window.SmartSettings.translationEnabled = res.translationEnabled;
+        if (res.translationLangCode !== undefined) window.SmartSettings.translationLangCode = res.translationLangCode;
+    });
+
+    chrome.storage.onChanged.addListener(function(changes) {
+        if (changes.phoneticEnabled) window.SmartSettings.phoneticEnabled = changes.phoneticEnabled.newValue;
+        if (changes.phoneticLangCode) window.SmartSettings.phoneticLangCode = changes.phoneticLangCode.newValue;
+        if (changes.translationEnabled) window.SmartSettings.translationEnabled = changes.translationEnabled.newValue;
+        if (changes.translationLangCode) window.SmartSettings.translationLangCode = changes.translationLangCode.newValue;
+    });
+}
+
+// 2. DYNAMIC PHONETIC API
 async function fetchTransliteration(word) {
+    let lang = window.SmartSettings.phoneticLangCode;
+    let url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=${lang}-t-i0-und&num=1`;
     try {
-        const url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=bn-t-i0-und&num=3&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data[0] === "SUCCESS" && data[1] && data[1][0] && data[1][0][1]) {
-            let rawSuggestions = data[1][0][1];
-            
-            // Filter out garbage (spaces or English letters)
-            let cleanSuggestions = rawSuggestions.filter(sug => !sug.includes(" ") && !/[a-zA-Z]/.test(sug));
-            
-            // Return only the FIRST best valid phonetic word
-            return cleanSuggestions.length > 0 ? cleanSuggestions[0] : null;
+        let res = await fetch(url);
+        let data = await res.json();
+        if (data[0] === 'SUCCESS' && data[1][0] && data[1][0][1]) {
+            return data[1][0][1][0];
         }
-    } catch (error) {
-        console.error("Transliteration Error:", error);
+    } catch (e) {
+        console.error("Phonetic Error:", e);
     }
     return null;
 }
 
-// Helper function for sentence translation
-function transliterateSentence(sentence) {
-    let words = sentence.split(" ");
-    let convertedWords = words.map(word => {
-        if (/[a-zA-Z]/.test(word)) {
-            return convertToBangla(word); 
-        }
-        return word;
-    });
-    return convertedWords.join(" ");
-}
-
-// Fetch sentence meaning for selected text
+// 3. INLINE TRANSLATION API
 async function fetchSentenceTranslation(text) {
+    let lang = window.SmartSettings.translationLangCode;
+    let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`;
     try {
-        let properBanglaText = transliterateSentence(text);
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=bn&tl=en&dt=t&q=${encodeURIComponent(properBanglaText)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data && data[0]) {
-            return data[0].map(item => item[0]).join("").trim();
+        let res = await fetch(url);
+        let data = await res.json();
+        if (data && data[0] && data[0][0]) {
+            return data[0].map(item => item[0]).join('');
         }
-    } catch (error) {
-        console.error("Sentence Translation Error:", error);
+    } catch (e) {
+        console.error("Translation Error:", e);
     }
     return null;
 }

@@ -1,4 +1,4 @@
-// main.js - CORE TYPING AND KEYBOARD EVENTS (PERFECT SPACING FIX)
+// main.js - CORE TYPING AND KEYBOARD EVENTS (RESTORED SYNCHRONOUS ENGINE)
 
 var currentSuggestions = []; 
 var selectedIndex = 0;       
@@ -41,8 +41,6 @@ function replaceLastWord(info, newWord, addSpace) {
         let textBefore = node.nodeValue.substring(0, offset - typedWordLength);
         let textAfter = node.nodeValue.substring(offset);
         
-        // MAGIC FIX: If there is no text after, we use \u00A0 (Non-Breaking Space) 
-        // to force the browser to visibly move the cursor forward!
         let spaceChar = "";
         if (addSpace) {
             spaceChar = (textAfter.length === 0) ? "\u00A0" : " ";
@@ -68,10 +66,18 @@ function replaceLastWord(info, newWord, addSpace) {
     typedWordLength = 0;
 }
 
-// TYPING LOGIC
+// TYPING LOGIC (100% Synchronous and Delay-Free)
 document.addEventListener('keyup', function(e) {
     if (e.code === 'Tab' || e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') return;
     if (typeof isSelectionMode !== 'undefined' && isSelectionMode) return; 
+
+    // Stop if Phonetic is OFF in settings
+    if (window.SmartSettings && window.SmartSettings.phoneticEnabled === false) {
+        if (suggestionBox) suggestionBox.style.display = 'none';
+        currentSuggestions = [];
+        activeWordRequest = "";
+        return;
+    }
 
     let info = getCursorInfo();
     if (!info) {
@@ -84,8 +90,16 @@ document.addEventListener('keyup', function(e) {
     
     if (lastWord.trim() !== "" && /^[a-zA-Z]+$/.test(lastWord)) {
         
-        let localSuggestion = convertToBangla(lastWord);
-        currentSuggestions = [localSuggestion];
+        let localSuggestion = null;
+        
+        // Use local engine only for Bangla
+        if (window.SmartSettings && window.SmartSettings.phoneticLangCode === 'bn' && typeof convertToBangla === 'function') {
+            localSuggestion = convertToBangla(lastWord);
+            currentSuggestions = [localSuggestion];
+        } else {
+            currentSuggestions = ["..."]; // Loading dots for other languages
+        }
+        
         selectedIndex = 0;
         typedWordLength = lastWord.length;
         lastCursorInfo = info;
@@ -104,7 +118,12 @@ document.addEventListener('keyup', function(e) {
         activeWordRequest = lastWord; 
         fetchTransliteration(lastWord).then(apiSuggestion => {
             if (apiSuggestion && activeWordRequest === lastWord) {
-                currentSuggestions = Array.from(new Set([apiSuggestion, localSuggestion]));
+                if (localSuggestion) {
+                    currentSuggestions = Array.from(new Set([apiSuggestion, localSuggestion]));
+                } else {
+                    currentSuggestions = [apiSuggestion];
+                }
+                
                 if(selectedIndex >= currentSuggestions.length) selectedIndex = 0;
                 
                 renderVSCodeSuggestion(currentSuggestions, selectedIndex);
@@ -121,8 +140,7 @@ document.addEventListener('keyup', function(e) {
 
 // KEYBOARD SHORTCUTS
 document.addEventListener('keydown', function(e) {
-    // 1. Selection Replacement Mode
-    if (typeof isSelectionMode !== 'undefined' && isSelectionMode && suggestionBox && suggestionBox.style.display === 'block' && selectionTranslation !== "") {
+    if (typeof isSelectionMode !== 'undefined' && isSelectionMode && suggestionBox && suggestionBox.style.display === 'block' && typeof selectionTranslation !== 'undefined' && selectionTranslation !== "") {
         if (e.code === 'Tab') {
             e.preventDefault();
             e.stopPropagation();
@@ -139,7 +157,6 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
-    // 2. Typing Replacement Mode
     if ((typeof isSelectionMode === 'undefined' || !isSelectionMode) && suggestionBox && suggestionBox.style.display === 'block' && currentSuggestions.length > 0) {
         if (e.code === 'ArrowDown') {
             e.preventDefault(); 

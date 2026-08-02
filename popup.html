@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Typist Settings</title>
+    <style>
+        body {
+            width: 320px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            margin: 0;
+            padding: 15px;
+        }
+        h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #ffffff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+            text-align: center;
+        }
+        .section {
+            background-color: #252526;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .header-row span {
+            font-weight: 600;
+            font-size: 14px;
+            color: #9cdcfe;
+        }
+        select {
+            width: 100%;
+            padding: 6px;
+            background-color: #3c3c3c;
+            color: #ffffff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            outline: none;
+            font-size: 13px;
+        }
+        select:focus {
+            border-color: #007acc;
+        }
+        /* Toggle Switch CSS */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #007acc;
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+        .info {
+            font-size: 11px;
+            color: #858585;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Smart Extension Settings</h2>
+
+    <!-- Section 1: Instant Phonetic Typing -->
+    <div class="section">
+        <div class="header-row">
+            <span>Instant Phonetic Typing</span>
+            <label class="switch">
+                <input type="checkbox" id="phoneticToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <select id="phoneticLang">
+            <option value="bn">Bangla (Banglish)</option>
+            <option value="hi">Hindi (Hinglish)</option>
+            <option value="ur">Urdu (Roman Urdu)</option>
+            <option value="ar">Arabic (Arabizi)</option>
+            <option value="ne">Nepali (Roman Nepali)</option>
+        </select>
+        <div class="info">Converts English letters to your native language instantly while typing.</div>
+    </div>
+
+    <!-- Section 2: Inline Translation -->
+    <div class="section">
+        <div class="header-row">
+            <span>Inline Translation</span>
+            <label class="switch">
+                <input type="checkbox" id="translationToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <select id="translationLang">
+            <option value="en">English</option>
+            <option value="bn">Bengali (বাংলা)</option>
+            <option value="hi">Hindi (हिंदी)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="fr">French (Français)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="zh-CN">Chinese (简体中文)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="ur">Urdu (اردو)</option>
+            <option value="tr">Turkish (Türkçe)</option>
+            <option value="ar">Arabic (العربية)</option>
+        </select>
+        <div class="info">Select text to auto-translate and replace it inside any chatbox.</div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

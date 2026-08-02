@@ -1,4 +1,4 @@
-// selection.js - HANDLES MOUSE SELECTION LOGIC (SPACE PRESERVER)
+// selection.js - HANDLES MOUSE SELECTION & DYNAMIC TRANSLATION
 
 var isSelectionMode = false;
 var selectionTranslation = "";
@@ -30,25 +30,32 @@ function isEditableArea(sel) {
 }
 
 function handleTextSelection() {
+    // 1. STOP WORKING IF TRANSLATION IS TURNED OFF IN POPUP
+    if (window.SmartSettings && window.SmartSettings.translationEnabled === false) {
+        hideSelectionBox();
+        return;
+    }
+
     let sel = window.getSelection();
-    let originalText = sel.toString(); // Keeping the exact text (with spaces)
-    let text = originalText.trim();    // Trimmed version for the API
+    let originalText = sel.toString(); 
+    let text = originalText.trim();    
     
     if (text.length > 1 && isEditableArea(sel)) {
         isSelectionMode = true;
         
-        // 1. Save leading and trailing spaces from the original selection
+        // Save leading and trailing spaces
         let leadingSpaces = originalText.match(/^\s*/)[0];
         let trailingSpaces = originalText.match(/\s*$/)[0];
         
-        renderVSCodeSuggestion(["Translating to English..."], 0);
+        // Show generic translating message since target language is dynamic
+        renderVSCodeSuggestion(["Translating..."], 0);
         let rect = sel.getRangeAt(0).getBoundingClientRect();
         if (typeof positionSuggestionBox === 'function') positionSuggestionBox(rect); 
 
         fetchSentenceTranslation(text).then(translation => {
             if (translation && isSelectionMode && window.getSelection().toString() === originalText) {
                 
-                // 2. Add the spaces back to the final translation
+                // Add the spaces back
                 selectionTranslation = leadingSpaces + translation + trailingSpaces;
                 
                 renderVSCodeSuggestion([translation], 0);
