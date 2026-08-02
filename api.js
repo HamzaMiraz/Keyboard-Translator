@@ -41,10 +41,30 @@ async function fetchTransliteration(word) {
     return null;
 }
 
-// 3. INLINE TRANSLATION API
+// 3. INLINE TRANSLATION API (Restored Mixed-Language Support)
+// 3. INLINE TRANSLATION API (Decoupled & Independent Pipeline)// phonetic and translation are now independent, so you can turn off phonetic typing but still get perfect translations for Banglish/Hinglish text.
 async function fetchSentenceTranslation(text) {
-    let lang = window.SmartSettings.translationLangCode;
-    let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`;
+    let targetLang = window.SmartSettings.translationLangCode;
+    let textToTranslate = text;
+
+    // FIX: Removed the 'phoneticEnabled' condition.
+    // Now it ALWAYS pre-processes the selected text based on your native language code,
+    // so Banglish/Hinglish will always translate perfectly even if typing is turned off!
+    let phoneticLang = window.SmartSettings.phoneticLangCode || 'bn';
+    let translitUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=${phoneticLang}-t-i0-und&num=1`;
+    
+    try {
+        let tRes = await fetch(translitUrl);
+        let tData = await tRes.json();
+        if (tData[0] === 'SUCCESS' && tData[1]) {
+            textToTranslate = tData[1].map(item => item[1][0]).join('');
+        }
+    } catch (e) {
+        console.error("Smart Pipeline Error:", e);
+    }
+
+    // Send the processed text to Google Translate
+    let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
     try {
         let res = await fetch(url);
         let data = await res.json();
