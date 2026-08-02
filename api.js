@@ -33,7 +33,7 @@ const MAX_CACHE_SIZE = 10000; // Maximum words to keep in RAM
 function manageCacheSize(cacheObj) {
     let keys = Object.keys(cacheObj);
     if (keys.length > MAX_CACHE_SIZE) {
-        // Delete the oldest 500 entries to free up RAM instantly
+        // Delete the oldest 5000 entries to free up RAM instantly
         for (let i = 0; i < MAX_CACHE_SIZE / 2; i++) {
             delete cacheObj[keys[i]];
         }
