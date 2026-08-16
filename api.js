@@ -34,6 +34,7 @@ window.PhoneticCache = {};
 
 window.TranslationCache = {};
 
+<<<<<<< HEAD
 
 
 // 1. LOAD SETTINGS & PERSISTENT CACHE ON BOOT
@@ -138,6 +139,14 @@ function manageCacheSize(cacheObj, cacheName) {
 
         for (let i = 0; i < deleteCount; i++) {
 
+=======
+// Function to auto-clean old cache when limit is reached
+function manageCacheSize(cacheObj) {
+    let keys = Object.keys(cacheObj);
+    if (keys.length > MAX_CACHE_SIZE) {
+        // Delete the oldest 5000 entries to free up RAM instantly
+        for (let i = 0; i < MAX_CACHE_SIZE / 2; i++) {
+>>>>>>> 32c6a7659c74dc64f4bd5d75de9b8bccd36bb2d8
             delete cacheObj[keys[i]];
 
         }
@@ -287,6 +296,7 @@ async function fetchSentenceTranslation(text) {
     }
 
 
+<<<<<<< HEAD
 
     return new Promise((resolve) => {
 
@@ -347,3 +357,23 @@ window.fetchTransliteration = fetchTransliteration;
 window.fetchSentenceTranslation = fetchSentenceTranslation;
 
 window.SmartAPI = { fetchTransliteration, fetchSentenceTranslation };
+=======
+    let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
+    try {
+        let res = await fetch(url);
+        let data = await res.json();
+        if (data && data[0] && data[0][0]) {
+            let result = data[0].map(item => item[0]).join('');
+            
+            // Save to Cache & Manage RAM
+            window.TranslationCache[cacheKey] = result;
+            manageCacheSize(window.TranslationCache);
+            
+            return result;
+        }
+    } catch (e) {
+        console.error("Translation Error:", e);
+    }
+    return null;
+}
+>>>>>>> 32c6a7659c74dc64f4bd5d75de9b8bccd36bb2d8
