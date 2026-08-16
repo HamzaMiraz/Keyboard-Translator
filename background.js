@@ -16,7 +16,7 @@ const LANGUAGE_NAMES = {
 
 
 
-const PHONETIC_SUPPORTED = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN', 'ko'];
+const PHONETIC_SUPPORTED = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN'];
 
 
 

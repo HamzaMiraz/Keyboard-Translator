@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearCacheBtn = document.getElementById('clearCacheBtn');
     const status = document.getElementById('status');
 
-    const phoneticSupportedLangs = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN', 'ko']; 
+    const phoneticSupportedLangs = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN'];
 
     // STRICT Show/Hide Logic for 2-Page Design
     openSettingsBtn.addEventListener('click', () => { 
