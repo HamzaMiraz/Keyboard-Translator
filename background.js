@@ -162,7 +162,7 @@ async function handleTranslation(data) {
 
     if (hasEnglishAlphabets && PHONETIC_SUPPORTED.includes(sourceLang)) {
 
-        let InputToolCode = (sourceLang === 'zh-CN') ? 'zh-t-i0-pinyin' : `${sourceLang}-t-i0-und`;// diffrant for chinese
+        let InputToolCode = (sourceLang === 'zh-CN') ? 'zh-t-i0-pinyin' : `${sourceLang}-t-i0-und`;// different for chinese
         const translitUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=${InputToolCode}&num=1`;
         
         try {
@@ -205,7 +205,7 @@ async function handleTranslation(data) {
 
             if (engine === 'auto_fallback') {
 
-                // Route 1: Auto Fallback (Google -> Gemini -> Groq)
+                // Route 1: Auto Fallback (Google -> Groq -> Gemini)
 
                 try {
 
@@ -215,15 +215,15 @@ async function handleTranslation(data) {
 
                     try {
 
-                        primaryResult = { success: true, translation: await runGemini(textToTranslate, sourceLang, targetLang, geminiApiKey, systemPrompt) };
+                        primaryResult = { success: true, translation: await runGroq(textToTranslate, sourceLang, targetLang, groqApiKey, systemPrompt) };
 
-                    } catch (eGemini) {
+                    } catch (eGroq) {
 
                         try {
 
-                            primaryResult = { success: true, translation: await runGroq(textToTranslate, sourceLang, targetLang, groqApiKey, systemPrompt) };
+                            primaryResult = { success: true, translation: await runGemini(textToTranslate, sourceLang, targetLang, geminiApiKey, systemPrompt) };
 
-                        } catch (eGroq) {
+                        } catch (eGemini) {
 
                             throw new Error("Auto Fallback failed: All translation engines are unavailable or missing keys.");
 
