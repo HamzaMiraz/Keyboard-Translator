@@ -228,7 +228,8 @@ async function fetchTransliteration(word) {
 
     try {
 
-        const url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=${langCode}-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
+        let InputToolCode = (langCode === 'zh-CN') ? 'zh-t-i0-pinyin' : `${langCode}-t-i0-und`;// diffrant for chinese
+        const url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=${InputToolCode}&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
 
         const response = await fetch(url);
 

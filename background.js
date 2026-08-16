@@ -16,7 +16,7 @@ const LANGUAGE_NAMES = {
 
 
 
-const PHONETIC_SUPPORTED = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN'];
+const PHONETIC_SUPPORTED = ['bn', 'hi', 'ar', 'ru', 'ur', 'ja', 'zh-CN']; // Languages that support phonetic transliteration
 
 
 
@@ -162,8 +162,9 @@ async function handleTranslation(data) {
 
     if (hasEnglishAlphabets && PHONETIC_SUPPORTED.includes(sourceLang)) {
 
-        const translitUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=${sourceLang}-t-i0-und&num=1`;
-
+        let InputToolCode = (sourceLang === 'zh-CN') ? 'zh-t-i0-pinyin' : `${sourceLang}-t-i0-und`;// diffrant for chinese
+        const translitUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=${InputToolCode}&num=1`;
+        
         try {
 
             const tRes = await fetch(translitUrl);
