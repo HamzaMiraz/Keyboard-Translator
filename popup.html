@@ -3,151 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Typist Settings</title>
+    <title>Smart Phonetic & AI Translator</title>
     <style>
-        body {
-            width: 320px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            margin: 0;
-            padding: 15px;
-        }
-        h2 {
-            font-size: 16px;
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #ffffff;
-            border-bottom: 1px solid #333;
-            padding-bottom: 8px;
-            text-align: center;
-        }
-        .section {
-            background-color: #252526;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 15px;
-        }
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .header-row span {
-            font-weight: 600;
-            font-size: 14px;
-            color: #9cdcfe;
-        }
-        select {
-            width: 100%;
-            padding: 6px;
-            background-color: #3c3c3c;
-            color: #ffffff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            outline: none;
-            font-size: 13px;
-        }
-        select:focus {
-            border-color: #007acc;
-        }
-        /* Toggle Switch CSS */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 34px;
-            height: 18px;
-        }
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #555;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 12px;
-            width: 12px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #007acc;
-        }
-        input:checked + .slider:before {
-            transform: translateX(16px);
-        }
-        .info {
-            font-size: 11px;
-            color: #858585;
-            margin-top: 8px;
-            line-height: 1.4;
-        }
+        body { width: 320px; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #1e1e1e; color: #ffffff; margin: 0; position: relative; }
+        h2 { font-size: 16px; text-align: center; margin-bottom: 15px; color: #4CAF50; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .page { padding: 15px; box-sizing: border-box; width: 100%; }
+        .setting-group { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .setting-title { font-size: 13px; font-weight: bold; margin-bottom: 10px; color: #aaa; }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        label { font-size: 14px; }
+        select, input[type="password"] { width: 100%; padding: 6px 8px; background: #1e1e1e; color: #fff; border: 1px solid #444; border-radius: 4px; font-size: 13px; margin-top: 5px; box-sizing: border-box; }
+        select:focus, input:focus { outline: none; border-color: #4CAF50; }
+        .toggle-switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #4CAF50; }
+        input:checked + .slider:before { transform: translateX(14px); }
+        .btn { width: 100%; padding: 8px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-top: 5px; background: #333; transition: background 0.2s; }
+        .btn:hover { background: #444; }
+        .btn-clear { background: #e53935; }
+        .btn-clear:hover { background: #d32f2f; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .header-row h2 { border: none; padding: 0; margin: 0; }
+        .btn-icon { background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; }
+        .btn-icon:hover { color: #fff; }
+        
+        .api-container { margin-top: 10px; display: none; }
+        #settingsPage { display: none; }
+        #mainPage { display: block; }
+        ::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
 <body>
-
-    <h2>Smart Extension Settings</h2>
-
-    <!-- Section 1: Instant Phonetic Typing -->
-    <div class="section">
+    <!-- MAIN PAGE -->
+    <div class="page" id="mainPage">
         <div class="header-row">
-            <span>Instant Phonetic Typing</span>
-            <label class="switch">
-                <input type="checkbox" id="phoneticToggle">
-                <span class="slider"></span>
-            </label>
+            <h2>Hybrid Translator</h2>
+            <button class="btn-icon" id="openSettingsBtn" title="Settings">⚙️</button>
         </div>
-        <select id="phoneticLang">
-            <option value="bn">Bangla (Banglish)</option>
-            <option value="hi">Hindi (Hinglish)</option>
-            <option value="ur">Urdu (Roman Urdu)</option>
-            <option value="ar">Arabic (Arabizi)</option>
-            <option value="ne">Nepali (Roman Nepali)</option>
-        </select>
-        <div class="info">Converts English letters to your native language instantly while typing.</div>
+
+        <div class="setting-group">
+            <div class="setting-title">TYPING SETTINGS</div>
+            <div class="row">
+                <label>Phonetic Typing</label>
+                <label class="toggle-switch"><input type="checkbox" id="phoneticToggle"><span class="slider"></span></label>
+            </div>
+            <div>
+                <label style="font-size: 12px; color: #888;">My Language (Base)</label>
+                <select id="myLanguage">
+                    <option value="auto">Auto Detect Language</option>
+                    <option value="en">English</option>
+                    <option value="bn">Bengali (বাংলা)</option>
+                    <option value="hi">Hindi (हिन्दी)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="zh-CN">Chinese Simplified (简体中文)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="ur">Urdu (اردو)</option>
+                    <option value="tr">Turkish (Türkçe)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">INLINE TRANSLATION</div>
+            <div class="row">
+                <label>Translation</label>
+                <label class="toggle-switch"><input type="checkbox" id="translationToggle"><span class="slider"></span></label>
+            </div>
+            <div>
+                <label style="font-size: 12px; color: #888;">Target Language</label>
+                <select id="targetLanguage">
+                    <option value="en">English</option>
+                    <option value="bn">Bengali (বাংলা)</option>
+                    <option value="hi">Hindi (हिन्दी)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="zh-CN">Chinese Simplified (简体中文)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="ur">Urdu (اردو)</option>
+                    <option value="tr">Turkish (Türkçe)</option>
+                </select>
+            </div>
+        </div>
+        <div id="status" style="text-align:center; color:#4CAF50; font-size:12px; opacity:0; transition:0.3s;">Saved!</div>
     </div>
 
-    <!-- Section 2: Inline Translation -->
-    <div class="section">
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="settingsPage">
         <div class="header-row">
-            <span>Inline Translation</span>
-            <label class="switch">
-                <input type="checkbox" id="translationToggle">
-                <span class="slider"></span>
-            </label>
+            <button class="btn-icon" id="backBtn" title="Back">⬅️</button>
+            <h2>Engine Settings</h2>
         </div>
-        <select id="translationLang">
-            <option value="en">English</option>
-            <option value="bn">Bengali (বাংলা)</option>
-            <option value="hi">Hindi (हिंदी)</option>
-            <option value="es">Spanish (Español)</option>
-            <option value="fr">French (Français)</option>
-            <option value="de">German (Deutsch)</option>
-            <option value="ja">Japanese (日本語)</option>
-            <option value="zh-CN">Chinese (简体中文)</option>
-            <option value="ru">Russian (Русский)</option>
-            <option value="pt">Portuguese (Português)</option>
-            <option value="it">Italian (Italiano)</option>
-            <option value="ko">Korean (한국어)</option>
-            <option value="ur">Urdu (اردو)</option>
-            <option value="tr">Turkish (Türkçe)</option>
-            <option value="ar">Arabic (العربية)</option>
-        </select>
-        <div class="info">Select text to auto-translate and replace it inside any chatbox.</div>
+        
+        <div class="setting-group">
+            <div class="setting-title">TRANSLATION ENGINE</div>
+            <select id="aiEngine">
+                <option value="auto_fallback">Auto Fallback (Google -> Gemini -> Groq)</option>
+                <optgroup label="Free Engine">
+                    <option value="google">Google Translate</option>
+                </optgroup>
+                <optgroup label="API-Based Super AI">
+                    <option value="groq">Groq (Llama-3)</option>
+                    <option value="gemini">Google Gemini</option>
+                </optgroup>
+            </select>
+            
+            <div id="apiContainers">
+                <div class="api-container" id="cont-groq">
+                    <label style="font-size: 11px;">Groq API Key</label>
+                    <input type="password" id="groqApiKey" placeholder="Enter Groq Key">
+                </div>
+                <div class="api-container" id="cont-gemini">
+                    <label style="font-size: 11px;">Gemini API Key</label>
+                    <input type="password" id="geminiApiKey" placeholder="Enter Gemini Key">
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-group" style="padding: 10px 12px;">
+            <button id="clearCacheBtn" class="btn btn-clear">Clear Cache Memory</button>
+        </div>
     </div>
 
     <script src="popup.js"></script>

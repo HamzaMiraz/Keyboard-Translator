@@ -7,6 +7,12 @@
     "storage",
     "activeTab"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Settings"
@@ -16,9 +22,9 @@
       "matches": ["<all_urls>"],
       "all_frames": true,
       "js": [
-        "api.js",
         "engine.js",
         "ui.js",
+        "api.js",
         "selection.js",
         "main.js"
       ]
