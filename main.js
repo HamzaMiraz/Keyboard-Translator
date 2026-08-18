@@ -449,3 +449,33 @@ document.addEventListener('suggestionHovered', function(e) {
     }
 
 });
+
+// =========================================================================
+// HIDE SUGGESTION BOX ON OUTSIDE CLICK OR TAB SWITCH (UX FIX)
+// =========================================================================
+
+// 1. Handle Mouse Clicks Outside the Input Box
+document.addEventListener('mousedown', function(event) {
+    // Check if suggestion box exists and is currently visible
+    if (typeof suggestionBox !== 'undefined' && suggestionBox && suggestionBox.style.display === 'block') {
+        
+        // If the user clicks anywhere OUTSIDE the suggestion box itself
+        if (!suggestionBox.contains(event.target)) {
+            suggestionBox.style.display = 'none'; // Hide the box
+            currentSuggestions = [];              // Clear memory
+            typedWordLength = 0;                  // Reset word length
+            activeWordRequest = "";               // Clear active request
+        }
+    }
+});
+
+// // 2. Handle Tab Switching or Window Losing Focus
+// window.addEventListener('blur', function() {
+//     // If the user changes tabs or minimizes the browser, hide the box safely
+//     if (typeof suggestionBox !== 'undefined' && suggestionBox && suggestionBox.style.display === 'block') {
+//         suggestionBox.style.display = 'none';
+//         currentSuggestions = [];
+//         typedWordLength = 0;
+//         activeWordRequest = "";
+//     }
+// });
